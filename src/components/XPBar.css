@@ -1,0 +1,22 @@
+.xp-bar-container {
+  width: 100%;
+  padding: 0 var(--space-2);
+}
+
+.xp-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.xp-bar-level {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.xp-bar-value {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}

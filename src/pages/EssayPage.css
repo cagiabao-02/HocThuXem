@@ -1,0 +1,84 @@
+.essay-page {
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+.essay-question {
+  padding: var(--space-8);
+}
+
+.essay-question-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.essay-question-header h3 {
+  font-size: var(--font-size-xl);
+  line-height: 1.5;
+}
+
+.essay-textarea {
+  min-height: 200px;
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-base);
+  line-height: 1.7;
+}
+
+/* Feedback */
+.essay-feedback {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  background: var(--bg-input);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--space-4);
+  border-left: 4px solid var(--accent);
+}
+
+.essay-feedback-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.essay-score-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.essay-score-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.essay-feedback-text {
+  flex: 1;
+}
+
+.essay-feedback-text h4 {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.essay-feedback-text p {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .essay-feedback {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
