@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, Check, X, ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Check, X, ChevronLeft, ChevronRight, Trophy, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
 import { supabase } from '../lib/supabase';
@@ -20,6 +20,7 @@ export default function FlashCardPage() {
   const [knownCards, setKnownCards] = useState<Set<number>>(new Set());
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [earnedXP, setEarnedXP] = useState(0);
 
   useEffect(() => {
     loadLesson();
@@ -77,24 +78,30 @@ export default function FlashCardPage() {
 
     const score = knownCards.size;
     const maxScore = cards.length;
-    const xpEarned = Math.round((score / maxScore) * 30) + 10;
+    const xpEarned = maxScore > 0 ? Math.round((score / maxScore) * 30) + 10 : 10;
+    setEarnedXP(xpEarned);
 
-    await supabase.from('lesson_attempts').insert({
-      lesson_id: lesson.id,
-      user_id: user.id,
-      score,
-      max_score: maxScore,
-      xp_earned: xpEarned,
-      answers: { known: Array.from(knownCards) },
-    });
+    try {
+      await supabase.from('lesson_attempts').insert({
+        lesson_id: lesson.id,
+        user_id: user.id,
+        score,
+        max_score: maxScore,
+        xp_earned: xpEarned,
+        answers: { known: Array.from(knownCards) },
+      });
 
-    await addXP(xpEarned);
+      await addXP(xpEarned);
+    } catch (err) {
+      console.error('Failed to record flashcard attempt or add XP:', err);
+    }
   };
 
   const handleRestart = () => {
     setCurrentIndex(0);
     setFlipped(false);
     setKnownCards(new Set());
+    setEarnedXP(0);
     setCompleted(false);
   };
 
@@ -113,6 +120,7 @@ export default function FlashCardPage() {
   if (completed) {
     const score = knownCards.size;
     const percent = Math.round((score / cards.length) * 100);
+    const displayXP = earnedXP || (cards.length > 0 ? Math.round((score / cards.length) * 30) + 10 : 10);
 
     return (
       <div className="page-enter flashcard-complete">
@@ -130,6 +138,11 @@ export default function FlashCardPage() {
               <span className="complete-stat-value">{percent}%</span>
               <span className="complete-stat-label">{t('quiz.score')}</span>
             </div>
+          </div>
+
+          <div className="complete-xp">
+            <Zap size={20} color="var(--accent)" />
+            <span>+{displayXP} XP</span>
           </div>
 
           <div className="complete-actions">
