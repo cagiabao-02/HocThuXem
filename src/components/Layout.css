@@ -73,6 +73,10 @@
 
 /* Mobile */
 @media (max-width: 768px) {
+  .sidebar-toggle-outer {
+    display: none !important;
+  }
+
   .main-content {
     margin-left: 0;
     margin-bottom: 64px;

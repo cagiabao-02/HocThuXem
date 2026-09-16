@@ -106,31 +106,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const addXP = async (amount: number) => {
     if (!user || !profile) return;
-    const newXP = profile.xp + amount;
+    const newXP = (profile.xp || 0) + amount;
     const newLevel = Math.floor(newXP / 100) + 1;
 
-    // Update streak
+    // Update streak based on calendar date difference
     const today = new Date().toISOString().split('T')[0];
     const lastActivity = profile.last_activity_date;
-    let newStreak = profile.current_streak;
+    let newStreak = profile.current_streak || 0;
 
-    if (lastActivity) {
-      const lastDate = new Date(lastActivity);
-      const todayDate = new Date(today);
-      const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (!lastActivity || newStreak === 0) {
+      // First activity ever or streak was broken/zero
+      newStreak = 1;
+    } else {
+      const [todayY, todayM, todayD] = today.split('-').map(Number);
+      const [lastY, lastM, lastD] = lastActivity.split('-').map(Number);
+      const diffDays = Math.round((Date.UTC(todayY, todayM - 1, todayD) - Date.UTC(lastY, lastM - 1, lastD)) / (1000 * 60 * 60 * 24));
 
       if (diffDays === 1) {
+        // Consecutive day
         newStreak += 1;
       } else if (diffDays > 1) {
+        // Streak broken
         newStreak = 1;
+      } else if (diffDays === 0) {
+        // Same day activity: maintain at least 1
+        newStreak = Math.max(newStreak, 1);
       }
-      // diffDays === 0: same day, no change
-    } else {
-      newStreak = 1;
     }
 
-    const maxStreak = Math.max(newStreak, profile.max_streak);
+    const maxStreak = Math.max(newStreak, profile.max_streak || 0);
 
+    // Optimistic UI update so flame lights up and XP increases instantly
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            xp: newXP,
+            level: newLevel,
+            current_streak: newStreak,
+            max_streak: maxStreak,
+            last_activity_date: today,
+          }
+        : null
+    );
+
+    // Persist to database
     await updateProfile({
       xp: newXP,
       level: newLevel,

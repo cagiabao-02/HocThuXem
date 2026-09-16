@@ -23,6 +23,7 @@ export default function EssayPage() {
   const [allScores, setAllScores] = useState<{ score: number; maxScore: number }[]>([]);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [earnedXP, setEarnedXP] = useState(0);
 
   useEffect(() => {
     loadLesson();
@@ -69,18 +70,23 @@ export default function EssayPage() {
 
     const totalScore = allScores.reduce((sum, s) => sum + s.score, 0);
     const totalMax = allScores.reduce((sum, s) => sum + s.maxScore, 0);
-    const xpEarned = Math.round((totalScore / totalMax) * 50) + 10;
+    const xpEarned = totalMax > 0 ? Math.round((totalScore / totalMax) * 50) + 10 : 10;
+    setEarnedXP(xpEarned);
 
-    await supabase.from('lesson_attempts').insert({
-      lesson_id: lesson.id,
-      user_id: user.id,
-      score: totalScore,
-      max_score: totalMax,
-      xp_earned: xpEarned,
-      answers: { scores: allScores },
-    });
+    try {
+      await supabase.from('lesson_attempts').insert({
+        lesson_id: lesson.id,
+        user_id: user.id,
+        score: totalScore,
+        max_score: totalMax,
+        xp_earned: xpEarned,
+        answers: { scores: allScores },
+      });
 
-    await addXP(xpEarned);
+      await addXP(xpEarned);
+    } catch (err) {
+      console.error('Failed to record essay attempt or add XP:', err);
+    }
   };
 
   const handleRestart = () => {
@@ -88,6 +94,7 @@ export default function EssayPage() {
     setAnswer('');
     setFeedback(null);
     setAllScores([]);
+    setEarnedXP(0);
     setCompleted(false);
   };
 
@@ -100,8 +107,8 @@ export default function EssayPage() {
   if (completed) {
     const totalScore = allScores.reduce((sum, s) => sum + s.score, 0);
     const totalMax = allScores.reduce((sum, s) => sum + s.maxScore, 0);
-    const percent = Math.round((totalScore / totalMax) * 100);
-    const xpEarned = Math.round((totalScore / totalMax) * 50) + 10;
+    const percent = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+    const displayXP = earnedXP || (totalMax > 0 ? Math.round((totalScore / totalMax) * 50) + 10 : 10);
 
     return (
       <div className="page-enter quiz-complete">
@@ -120,7 +127,7 @@ export default function EssayPage() {
           </div>
           <div className="complete-xp">
             <Zap size={20} color="var(--accent)" />
-            <span>+{xpEarned} XP</span>
+            <span>+{displayXP} XP</span>
           </div>
           <div className="complete-actions">
             <button className="btn btn-outline" onClick={handleRestart}>

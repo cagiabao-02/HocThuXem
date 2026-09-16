@@ -21,6 +21,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [earnedXP, setEarnedXP] = useState(0);
 
   useEffect(() => {
     loadLesson();
@@ -44,7 +45,7 @@ export default function QuizPage() {
   const handleSubmit = () => {
     if (selectedAnswer === null) return;
     setShowResult(true);
-    setAnswers([...answers, selectedAnswer]);
+    setAnswers((prev) => [...prev, selectedAnswer]);
   };
 
   const handleNext = () => {
@@ -57,26 +58,34 @@ export default function QuizPage() {
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (completedAnswers?: number[]) => {
     setCompleted(true);
     if (!user || !lesson) return;
 
-    const finalAnswers = [...answers, selectedAnswer!];
+    const finalAnswers = completedAnswers ?? answers;
     const correctCount = finalAnswers.filter(
-      (ans, i) => ans === questions[i].correct_index
+      (ans, i) => questions[i] && ans === questions[i].correct_index
     ).length;
-    const xpEarned = Math.round((correctCount / questions.length) * 40) + 10;
+    const xpEarned = questions.length > 0
+      ? Math.round((correctCount / questions.length) * 40) + 10
+      : 10;
 
-    await supabase.from('lesson_attempts').insert({
-      lesson_id: lesson.id,
-      user_id: user.id,
-      score: correctCount,
-      max_score: questions.length,
-      xp_earned: xpEarned,
-      answers: { selected: finalAnswers },
-    });
+    setEarnedXP(xpEarned);
 
-    await addXP(xpEarned);
+    try {
+      await supabase.from('lesson_attempts').insert({
+        lesson_id: lesson.id,
+        user_id: user.id,
+        score: correctCount,
+        max_score: questions.length,
+        xp_earned: xpEarned,
+        answers: { selected: finalAnswers },
+      });
+
+      await addXP(xpEarned);
+    } catch (err) {
+      console.error('Failed to save attempt or add XP:', err);
+    }
   };
 
   const handleRestart = () => {
@@ -84,6 +93,7 @@ export default function QuizPage() {
     setSelectedAnswer(null);
     setShowResult(false);
     setAnswers([]);
+    setEarnedXP(0);
     setCompleted(false);
   };
 
@@ -96,9 +106,9 @@ export default function QuizPage() {
   // Completed screen
   if (completed) {
     const allAnswers = [...answers];
-    const correctCount = allAnswers.filter((ans, i) => ans === questions[i].correct_index).length;
-    const percent = Math.round((correctCount / questions.length) * 100);
-    const xpEarned = Math.round((correctCount / questions.length) * 40) + 10;
+    const correctCount = allAnswers.filter((ans, i) => questions[i] && ans === questions[i].correct_index).length;
+    const percent = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
+    const displayXP = earnedXP || (questions.length > 0 ? Math.round((correctCount / questions.length) * 40) + 10 : 10);
 
     return (
       <div className="page-enter quiz-complete">
@@ -127,7 +137,7 @@ export default function QuizPage() {
 
           <div className="complete-xp">
             <Zap size={20} color="var(--accent)" />
-            <span>+{xpEarned} XP</span>
+            <span>+{displayXP} XP</span>
           </div>
 
           <div className="complete-actions">
